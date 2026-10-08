@@ -1,0 +1,367 @@
+{
+  "info": {
+    "name": "LP3 — Clase 9: API REST Productos",
+    "description": "Colección para verificar los tres endpoints REST implementados en la Clase 9.\n\nOrden de uso:\n1. POST Alta de producto (crea P-001)\n2. POST Alta de producto — segundo registro (crea P-002)\n3. GET Listado de todos los productos\n4. GET Consulta individual por id (id existente)\n5. GET Consulta individual por id (id inexistente → 404)\n\nBase URL: http://localhost:8080\nClase: LP3 — Jueves 8 de octubre de 2026\nDocente: Lic. Gustavo Lublin — UASS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "lp3-clase9-productos-2026",
+    "version": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "URL base de la aplicación Spring Boot"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 — POST Alta de producto (P-001)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "description": "Indica que el cuerpo está en formato JSON"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"codigo\": \"P-001\",\n    \"nombre\": \"Cuaderno\",\n    \"descripcion\": \"Cuaderno universitario de 100 hojas\",\n    \"precio\": 15000,\n    \"stock\": 50,\n    \"activo\": true,\n    \"fechaAlta\": \"2026-10-08\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/productos",
+          "host": ["{{baseUrl}}"],
+          "path": ["productos"]
+        },
+        "description": "Crea el producto Cuaderno (P-001).\n\nEsperamos:\n- Status: 201 Created\n- Body: el objeto guardado con el campo \"id\" asignado por PostgreSQL\n\nSi la tabla ya tiene datos de la Clase 8 y P-001 existe, cambiar el código a P-003."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status es 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"La respuesta tiene campo id\", function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.id).to.be.above(0);",
+              "    // Guardar el id para usarlo en la consulta individual",
+              "    pm.collectionVariables.set(\"ultimoId\", json.id);",
+              "});",
+              "",
+              "pm.test(\"El codigo coincide con el enviado\", function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.codigo).to.eql(\"P-001\");",
+              "});",
+              "",
+              "pm.test(\"Content-Type es application/json\", function () {",
+              "    pm.response.to.have.header(\"Content-Type\");",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 — POST Alta de producto (P-002)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"codigo\": \"P-002\",\n    \"nombre\": \"Bolígrafo\",\n    \"descripcion\": \"Bolígrafo de tinta azul\",\n    \"precio\": 3500,\n    \"stock\": 200,\n    \"activo\": true,\n    \"fechaAlta\": \"2026-10-08\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/productos",
+          "host": ["{{baseUrl}}"],
+          "path": ["productos"]
+        },
+        "description": "Crea el producto Bolígrafo (P-002).\n\nEsperamos:\n- Status: 201 Created\n- Body: el objeto guardado con su propio id"
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status es 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"La respuesta tiene campo id\", function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.id).to.be.a('number');",
+              "    pm.expect(json.id).to.be.above(0);",
+              "});",
+              "",
+              "pm.test(\"El nombre es Bolígrafo\", function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.nombre).to.eql(\"Bolígrafo\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 — POST Alta incompleta (sin campo obligatorio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"codigo\": \"P-ERROR\",\n    \"nombre\": \"Producto sin precio\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/productos",
+          "host": ["{{baseUrl}}"],
+          "path": ["productos"]
+        },
+        "description": "Intenta crear un producto sin los campos obligatorios (precio, stock, activo).\n\nEsperamos:\n- Status: 500 Internal Server Error\n  (precio, stock y activo tienen nullable=false en la entidad;\n   PostgreSQL rechaza la inserción)\n\nEsto permite ver cómo reacciona la aplicación ante datos incompletos."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status es 4xx o 5xx (error esperado)\", function () {",
+              "    pm.expect(pm.response.code).to.be.above(399);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 — GET Listado de todos los productos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/productos",
+          "host": ["{{baseUrl}}"],
+          "path": ["productos"]
+        },
+        "description": "Retorna todos los productos de la tabla.\n\nEsperamos:\n- Status: 200 OK\n- Body: arreglo JSON con los productos cargados\n  (puede ser [] si la tabla está vacía, sigue siendo 200)"
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status es 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"La respuesta es un arreglo\", function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json).to.be.an('array');",
+              "});",
+              "",
+              "pm.test(\"Content-Type es application/json\", function () {",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+              "});",
+              "",
+              "pm.test(\"Cada producto tiene id, codigo y nombre\", function () {",
+              "    var json = pm.response.json();",
+              "    if (json.length > 0) {",
+              "        json.forEach(function(p) {",
+              "            pm.expect(p).to.have.property('id');",
+              "            pm.expect(p).to.have.property('codigo');",
+              "            pm.expect(p).to.have.property('nombre');",
+              "        });",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 — GET Consulta por id (id 1 — existente)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/productos/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["productos", "1"]
+        },
+        "description": "Consulta el producto con id = 1.\n\nEsperamos:\n- Status: 200 OK\n- Body: objeto JSON con el producto\n\nSi el primer producto tiene otro id, cambiar el 1 por el id que retornó el primer POST."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status es 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"La respuesta tiene id igual a 1\", function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.id).to.eql(1);",
+              "});",
+              "",
+              "pm.test(\"La respuesta tiene todos los campos de Producto\", function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json).to.have.all.keys(",
+              "        'id', 'codigo', 'nombre', 'descripcion',",
+              "        'precio', 'stock', 'activo', 'fechaAlta'",
+              "    );",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 — GET Consulta por id (id 2 — existente)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/productos/2",
+          "host": ["{{baseUrl}}"],
+          "path": ["productos", "2"]
+        },
+        "description": "Consulta el producto con id = 2.\n\nEsperamos:\n- Status: 200 OK\n- Body: objeto JSON con el segundo producto"
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status es 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"El id retornado es 2\", function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.id).to.eql(2);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 — GET Consulta por id (id 999 — NO existente → 404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/productos/999",
+          "host": ["{{baseUrl}}"],
+          "path": ["productos", "999"]
+        },
+        "description": "Consulta un id que no existe en la base.\n\nEsperamos:\n- Status: 404 Not Found\n- Body: vacío\n\nEsto confirma que el patrón Optional → ResponseEntity.notFound() funciona correctamente."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status es 404 Not Found\", function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "",
+              "pm.test(\"El cuerpo está vacío\", function () {",
+              "    pm.expect(pm.response.text()).to.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 — POST Código duplicado (→ 500 unique constraint)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"codigo\": \"P-001\",\n    \"nombre\": \"Duplicado\",\n    \"descripcion\": \"Este código ya existe\",\n    \"precio\": 1000,\n    \"stock\": 1,\n    \"activo\": true,\n    \"fechaAlta\": \"2026-10-08\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/productos",
+          "host": ["{{baseUrl}}"],
+          "path": ["productos"]
+        },
+        "description": "Intenta insertar P-001 nuevamente (ya existe).\n\nEsperamos:\n- Status: 500 Internal Server Error\n- Causa: violates unique constraint \"productos_codigo_key\"\n\nEsto permite ver el error de constraint único en la consola de VS Code."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status es 500 (constraint único violado)\", function () {",
+              "    pm.response.to.have.status(500);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
