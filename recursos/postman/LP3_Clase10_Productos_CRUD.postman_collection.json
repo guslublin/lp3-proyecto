@@ -1,0 +1,457 @@
+{
+  "info": {
+    "_postman_id": "lp3-clase10-productos-crud-2026",
+    "name": "LP3 — Clase 10: API REST Productos (CRUD completo)",
+    "description": "Colección para verificar las cinco operaciones de la API REST de Productos.\n\nClase 9: POST (alta), GET (listado), GET /{id} (consulta).\nClase 10: PUT /{id} (modificación) y DELETE /{id} (eliminación).\n\nUso: con la aplicación en ejecución, Run collection (o Send en orden de 01 a 10). La colección crea su propio producto de prueba, lo modifica y lo elimina, por lo que puede ejecutarse varias veces sin tocar los datos existentes.\n\nCódigos esperados: 201 (POST), 200 (GET y PUT), 204 (DELETE), 404 (id inexistente).\n\nBase URL: {{baseUrl}} = http://localhost:8080\nLP3 — Jueves 15 de octubre de 2026 · Lic. Gustavo Lublin · UASS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1 · Preparación (operaciones de la Clase 9)",
+      "item": [
+        {
+          "name": "01 — POST Alta del producto de prueba",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Código único por ejecución (máximo 20 caracteres, columna unique)",
+                  "const sufijo = String(Date.now()).slice(-6);",
+                  "pm.collectionVariables.set(\"codigoPrueba\", \"P10-\" + sufijo);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta trae el id generado\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.be.a(\"number\");",
+                  "    pm.collectionVariables.set(\"idProducto\", json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "description": "Crea el producto que se usará en el resto de la colección.\n\nEl script previo genera un código único (P10-xxxxxx) para que la colección pueda ejecutarse varias veces sin violar la restricción unique de la columna codigo.\n\nEsperado: 201 Created y el objeto con el id asignado. El id queda guardado en la variable de colección idProducto.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"codigo\": \"{{codigoPrueba}}\",\n    \"nombre\": \"Mochila\",\n    \"descripcion\": \"Mochila escolar de 20 litros\",\n    \"precio\": 180000,\n    \"stock\": 15,\n    \"activo\": true,\n    \"fechaAlta\": \"2026-10-15\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "02 — GET Listado (incluye el producto creado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"El arreglo contiene el producto creado\", function () {",
+                  "    const id = Number(pm.collectionVariables.get(\"idProducto\"));",
+                  "    const ids = pm.response.json().map(p => p.id);",
+                  "    pm.expect(ids).to.include(id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "description": "Esperado: 200 OK y un arreglo JSON que contiene el producto recién creado."
+          },
+          "response": []
+        },
+        {
+          "name": "03 — GET Consulta por id (antes de modificar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Los datos son los originales\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.nombre).to.eql(\"Mochila\");",
+                  "    pm.expect(json.stock).to.eql(15);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{idProducto}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{idProducto}}"
+              ]
+            },
+            "description": "Esperado: 200 OK con los datos originales (nombre Mochila, stock 15)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2 · Modificación — PUT",
+      "item": [
+        {
+          "name": "04 — PUT Modificación del producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"El id no cambió\", function () {",
+                  "    const id = Number(pm.collectionVariables.get(\"idProducto\"));",
+                  "    pm.expect(pm.response.json().id).to.eql(id);",
+                  "});",
+                  "",
+                  "pm.test(\"Los datos fueron reemplazados\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.nombre).to.eql(\"Mochila reforzada\");",
+                  "    pm.expect(json.stock).to.eql(12);",
+                  "    pm.expect(Number(json.precio)).to.eql(195000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{idProducto}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{idProducto}}"
+              ]
+            },
+            "description": "Reemplaza los datos del producto. El cuerpo lleva TODOS los campos (PUT reemplaza la representación completa); el id va en la URL, no en el cuerpo.\n\nEsperado: 200 OK y el objeto con los datos nuevos y el MISMO id.\n\nEn la consola: un select (findById), un segundo select (save → merge) y un update.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"codigo\": \"{{codigoPrueba}}\",\n    \"nombre\": \"Mochila reforzada\",\n    \"descripcion\": \"Mochila escolar de 20 litros con refuerzo en la base\",\n    \"precio\": 195000,\n    \"stock\": 12,\n    \"activo\": true,\n    \"fechaAlta\": \"2026-10-15\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "05 — GET Consulta por id (después de modificar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La base guarda los datos nuevos\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.nombre).to.eql(\"Mochila reforzada\");",
+                  "    pm.expect(json.stock).to.eql(12);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{idProducto}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{idProducto}}"
+              ]
+            },
+            "description": "Confirma que la modificación quedó guardada en PostgreSQL.\n\nEsperado: 200 OK con los datos nuevos."
+          },
+          "response": []
+        },
+        {
+          "name": "06 — PUT id inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"El cuerpo está vacío\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/productos/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "999999"
+              ]
+            },
+            "description": "Intenta modificar un producto que no existe.\n\nEsperado: 404 Not Found y cuerpo vacío. La API no crea el recurso con PUT porque el id lo genera PostgreSQL (IDENTITY); para crear se usa POST.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"codigo\": \"{{codigoPrueba}}\",\n    \"nombre\": \"Mochila reforzada\",\n    \"descripcion\": \"Mochila escolar de 20 litros con refuerzo en la base\",\n    \"precio\": 195000,\n    \"stock\": 12,\n    \"activo\": true,\n    \"fechaAlta\": \"2026-10-15\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3 · Eliminación — DELETE",
+      "item": [
+        {
+          "name": "07 — DELETE Eliminación del producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta no tiene cuerpo\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{idProducto}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{idProducto}}"
+              ]
+            },
+            "description": "Elimina el producto de prueba.\n\nEsperado: 204 No Content, sin cuerpo.\n\nEn la consola: un select count (existsById), un select (deleteById busca la entidad) y un delete."
+          },
+          "response": []
+        },
+        {
+          "name": "08 — GET Consulta por id (después de eliminar) → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{idProducto}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{idProducto}}"
+              ]
+            },
+            "description": "Confirma que el producto ya no existe.\n\nEsperado: 404 Not Found."
+          },
+          "response": []
+        },
+        {
+          "name": "09 — DELETE el mismo id otra vez → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{idProducto}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{idProducto}}"
+              ]
+            },
+            "description": "Repite la eliminación. El estado del servidor no cambia (el producto sigue sin existir: DELETE es idempotente), pero la respuesta informa que el recurso ya no está.\n\nEsperado: 404 Not Found."
+          },
+          "response": []
+        },
+        {
+          "name": "10 — DELETE id inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status es 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "999999"
+              ]
+            },
+            "description": "Esperado: 404 Not Found. Sin la consulta existsById del servicio, deleteById ignoraría el id en silencio y la API respondería 204 aunque no hubiera borrado nada."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "idProducto",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "codigoPrueba",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

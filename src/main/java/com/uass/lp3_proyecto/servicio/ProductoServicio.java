@@ -9,11 +9,10 @@ import com.uass.lp3_proyecto.entidad.Producto;
 import com.uass.lp3_proyecto.repositorio.ProductoRepositorio;
 
 /**
- * Capa de servicio para la entidad Producto.
- * Contiene la lógica de negocio y actúa de intermediaria entre el
- * controlador y el repositorio.
+ * Capa de servicio de Producto.
  *
- * LP3 — Clase 9 (08/10/2026)
+ * Clase 9 (08/10/2026): guardar, listarTodos y buscarPorId.
+ * Clase 10 (15/10/2026): actualizar y eliminar.
  */
 @Service
 public class ProductoServicio {
@@ -24,32 +23,51 @@ public class ProductoServicio {
         this.repositorio = repositorio;
     }
 
-    /**
-     * Guarda un producto nuevo en la base de datos.
-     *
-     * @param producto objeto recibido desde el controlador (sin id)
-     * @return el producto guardado con el id asignado por PostgreSQL
-     */
+    // ── Clase 9 ──────────────────────────────────────────────────────────
+
     public Producto guardar(Producto producto) {
         return repositorio.save(producto);
     }
 
-    /**
-     * Retorna todos los productos de la tabla.
-     *
-     * @return lista (puede estar vacía si la tabla no tiene filas)
-     */
     public List<Producto> listarTodos() {
         return repositorio.findAll();
     }
 
-    /**
-     * Busca un producto por su identificador.
-     *
-     * @param id identificador a buscar
-     * @return Optional con el producto si existe, o vacío si no existe
-     */
     public Optional<Producto> buscarPorId(Long id) {
         return repositorio.findById(id);
+    }
+
+    // ── Clase 10 ─────────────────────────────────────────────────────────
+
+    /**
+     * Reemplaza los datos del producto indicado por los datos recibidos.
+     * Devuelve el producto actualizado, o un Optional vacío si el id no existe.
+     */
+    public Optional<Producto> actualizar(Long id, Producto datos) {
+        return repositorio.findById(id)
+                .map(existente -> {
+                    existente.setCodigo(datos.getCodigo());
+                    existente.setNombre(datos.getNombre());
+                    existente.setDescripcion(datos.getDescripcion());
+                    existente.setPrecio(datos.getPrecio());
+                    existente.setStock(datos.getStock());
+                    existente.setActivo(datos.getActivo());
+                    existente.setFechaAlta(datos.getFechaAlta());
+                    return repositorio.save(existente);
+                });
+    }
+
+    /**
+     * Elimina el producto indicado.
+     * Devuelve true si existía y se eliminó, false si el id no existe.
+     * Se consulta existsById antes porque deleteById ignora en silencio
+     * los identificadores inexistentes y no permitiría responder 404.
+     */
+    public boolean eliminar(Long id) {
+        if (!repositorio.existsById(id)) {
+            return false;
+        }
+        repositorio.deleteById(id);
+        return true;
     }
 }
